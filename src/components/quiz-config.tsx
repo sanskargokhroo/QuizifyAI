@@ -46,6 +46,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (state.error) {
@@ -64,14 +65,30 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
     const file = event.target.files?.[0];
     if (file) {
       setIsExtracting(true);
+      setExtractionSuccess(false);
+      setProgress(0);
       setActiveTab('paste'); // Switch to paste tab to show loader over textarea
+
+      // Simulate progress
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(interval);
+            return 95;
+          }
+          return prev + 5;
+        });
+      }, 2500); // Slower progress
 
       const reader = new FileReader();
       reader.onload = async (e) => {
         const fileDataUri = e.target?.result as string;
         const result = await extractTextFromFileAction({ fileDataUri });
         
+        clearInterval(interval);
+        setProgress(100);
         setIsExtracting(false);
+
         if (result.error) {
           toast({
             variant: 'destructive',
@@ -88,6 +105,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
         }
       };
       reader.onerror = () => {
+        clearInterval(interval);
         setIsExtracting(false);
         toast({
           variant: 'destructive',
@@ -109,7 +127,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
 
   return (
     <Card className="w-full shadow-lg relative">
-      {extractionSuccess && (
+       {extractionSuccess && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-md z-10">
           <div className="flex flex-col items-center gap-2 bg-secondary p-6 rounded-lg shadow-xl">
             <CheckCircle className="h-10 w-10 text-green-500" />
@@ -119,7 +137,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
       )}
       <CardHeader>
         <CardTitle className="text-2xl">Create Your Quiz</CardTitle>
-        <CardDescription>Start by providing some text content. We'll use AI to generate a quiz from it.</CardDescription>
+        <CardDescription>Start by providing some content. We'll use AI to generate a quiz from it.</CardDescription>
       </CardHeader>
       <form action={formAction}>
         <CardContent>
@@ -145,6 +163,10 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-md p-8">
                     <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
                     <p className="mt-4 text-sm font-semibold text-muted-foreground">Extracting text from file...</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-4">
+                        <div className="bg-primary h-2.5 rounded-full" style={{ width: `${progress}%`}}></div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{progress}%</p>
                   </div>
                 )}
               </div>
