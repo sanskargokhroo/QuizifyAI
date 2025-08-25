@@ -38,10 +38,10 @@ const extractTextFromPdfFlow = ai.defineFlow(
     },
     async (input) => {
       const {text} = await ai.generate({
-        prompt: `Extract text from the following PDF document.
-        Document:
-        {{media url=fileDataUri}}
-      `,
+        prompt: [
+            {text: "Extract all text from the following document provided as a data URI."},
+            {media: {url: input.fileDataUri}}
+        ]
       });
   
       return {text};
