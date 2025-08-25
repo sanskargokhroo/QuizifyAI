@@ -49,9 +49,9 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center bg-background p-4 sm:p-8">
       <div className="flex w-full max-w-4xl flex-col items-center gap-8">
-        <header className="flex flex-col items-center gap-2 text-primary">
+        <header className="flex flex-col items-center text-center gap-2">
           <div className='flex items-center gap-3'>
-            <BrainCircuit className="h-10 w-10" />
+            <BrainCircuit className="h-10 w-10 text-primary" />
             <h1 className="text-4xl font-bold text-foreground">QuizifyAI</h1>
           </div>
           <p className="text-sm text-muted-foreground">by Sanskar Gokhroo</p>
