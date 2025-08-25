@@ -35,22 +35,31 @@ const extractTextFromFileFlow = ai.defineFlow(
     outputSchema: ExtractTextFromFileOutputSchema,
   },
   async (input) => {
-    // Dynamically import file-type
-    const { fileTypeFromBuffer } = await (eval('import("file-type")') as Promise<typeof import('file-type')>);
-
-    const a = input.fileDataUri.split(',');
-    const b64 = a[1];
-    const buffer = Buffer.from(b64, 'base64');
-    const type = await fileTypeFromBuffer(buffer);
-
-    if (!type) {
-      throw new Error('Could not determine file type.');
+    // Extract mimetype from data URI
+    const mimeMatch = input.fileDataUri.match(/^data:(.*?);base64,/);
+    if (!mimeMatch) {
+      // Fallback for when mimetype is not in the data URI, though it should be.
+      const { fileTypeFromBuffer } = await (eval('import("file-type")') as Promise<typeof import('file-type')>);
+      const buffer = Buffer.from(input.fileDataUri.substring(input.fileDataUri.indexOf(',') + 1), 'base64');
+      const type = await fileTypeFromBuffer(buffer);
+      if (!type) {
+        throw new Error('Could not determine file type.');
+      }
+      const {text} = await ai.generate({
+        prompt: [
+          {text: 'Extract all text content from the following document. If the document is a DOC/DOCX, it will be provided in a compatible format. For all file types, extract the raw text content accurately.'},
+          {media: {url: input.fileDataUri, contentType: type.mime }},
+        ],
+      });
+      return {text};
     }
 
+    const contentType = mimeMatch[1];
+    
     const {text} = await ai.generate({
       prompt: [
         {text: 'Extract all text content from the following document. If the document is a DOC/DOCX, it will be provided in a compatible format. For all file types, extract the raw text content accurately.'},
-        {media: {url: input.fileDataUri, contentType: type.mime }},
+        {media: {url: input.fileDataUri, contentType }},
       ],
     });
 
