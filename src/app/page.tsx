@@ -54,7 +54,7 @@ export default function Home() {
             <BrainCircuit className="h-10 w-10 text-primary" />
             <div className="flex flex-col">
               <h1 className="text-4xl font-bold text-foreground">QuizifyAI</h1>
-              <p className="text-sm text-muted-foreground self-end">
+              <p className="text-sm text-muted-foreground self-end pr-4">
                 by Sanskar Gokhroo
               </p>
             </div>
