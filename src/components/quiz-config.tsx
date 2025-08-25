@@ -45,6 +45,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const [activeTab, setActiveTab] = useState('paste');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionMessage, setExtractionMessage] = useState('Extracting text from file...');
 
   useEffect(() => {
     if (state.error) {
@@ -63,12 +64,20 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
     const file = event.target.files?.[0];
     if (file) {
       setIsExtracting(true);
+      if (file.type === 'application/pdf') {
+        setExtractionMessage('Extracting PDF text... This might take a moment.');
+      } else {
+        setExtractionMessage('Extracting text from file...');
+      }
       setActiveTab('paste'); // Switch to paste tab to show loader over textarea
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         const fileDataUri = e.target?.result as string;
         const result = await extractTextFromFileAction({ fileDataUri });
+        
         setIsExtracting(false);
+
         if (result.error) {
           toast({
             variant: 'destructive',
@@ -80,7 +89,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
           setTextContent(result.text);
           toast({
             title: 'Success',
-            description: 'Text extracted from the file.',
+            description: 'Text extracted successfully.',
           });
         }
       };
@@ -134,7 +143,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-md">
                     <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Extracting text from file...
+                      {extractionMessage}
                     </p>
                   </div>
                 )}

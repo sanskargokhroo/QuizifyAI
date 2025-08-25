@@ -4,6 +4,7 @@ import { generateQuiz, type GenerateQuizOutput } from '@/ai/flows/generate-quiz'
 import { explainQuizSolution, type ExplainQuizSolutionInput, type ExplainQuizSolutionOutput } from '@/ai/flows/explain-solution';
 import { extractTextFromFile, type ExtractTextFromFileInput } from '@/ai/flows/extract-text-from-file';
 import { z } from 'zod';
+import { extractTextFromPdf } from '@/ai/flows/extract-text-from-pdf';
 
 const generateQuizSchema = z.object({
   text: z.string().min(50, { message: 'Please provide at least 50 characters of text to generate a quiz.' }),
@@ -55,7 +56,18 @@ export async function extractTextFromFileAction(
   input: ExtractTextFromFileInput
 ): Promise<{ text: string | null; error: string | null }> {
   try {
-    const result = await extractTextFromFile(input);
+    // Determine file type from data URI
+    const mimeType = input.fileDataUri.substring(input.fileDataUri.indexOf(':') + 1, input.fileDataUri.indexOf(';'));
+
+    let result;
+    if (mimeType === 'application/pdf') {
+      // Use the specialized, faster PDF extractor
+      result = await extractTextFromPdf(input);
+    } else {
+      // Use the general extractor for other file types (doc, txt, etc.)
+      result = await extractTextFromFile(input);
+    }
+    
     return { text: result.text, error: null };
   } catch (e) {
     console.error(e);
