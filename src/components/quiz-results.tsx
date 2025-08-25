@@ -94,7 +94,7 @@ export default function QuizResults({ quiz, userAnswers, sourceText, onRestart, 
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Continue with this content
+                  Continue Quiz
                 </>
               )}
             </Button>
