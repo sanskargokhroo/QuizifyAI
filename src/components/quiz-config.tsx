@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { generateQuizAction } from '@/app/actions';
+import { generateQuizAction, extractTextFromFileAction } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -44,6 +44,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const [textContent, setTextContent] = useState('');
   const [activeTab, setActiveTab] = useState('paste');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   useEffect(() => {
     if (state.error) {
@@ -58,24 +59,57 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
     }
   }, [state, onQuizGenerated, toast]);
   
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const fileContent = e.target?.result as string;
-        setTextContent(fileContent);
-        // Switch to paste tab to show content
-        setActiveTab('paste');
-      };
-      reader.onerror = () => {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to read file.',
-        });
-      };
-      reader.readAsText(file);
+      if (file.type === 'text/plain') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const fileContent = e.target?.result as string;
+          setTextContent(fileContent);
+          setActiveTab('paste');
+        };
+        reader.onerror = () => {
+          toast({ variant: 'destructive', title: 'Error', description: 'Failed to read file.' });
+        };
+        reader.readAsText(file);
+      } else {
+        setIsExtracting(true);
+        setActiveTab('paste'); // Switch to paste tab to show progress/result
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const fileDataUri = e.target?.result as string;
+          const result = await extractTextFromFileAction({ fileDataUri });
+          setIsExtracting(false);
+          if (result.error) {
+            toast({
+              variant: 'destructive',
+              title: 'OCR Error',
+              description: result.error,
+            });
+            setTextContent('');
+          } else if (result.text) {
+            setTextContent(result.text);
+            toast({
+              title: 'Success',
+              description: 'Text extracted from the file.',
+            });
+          }
+        };
+        reader.onerror = () => {
+          setIsExtracting(false);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to read file for OCR.',
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    // Reset file input to allow uploading the same file again
+    if(fileInputRef.current) {
+        fileInputRef.current.value = '';
     }
   };
   
@@ -97,7 +131,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
               <TabsTrigger value="upload">Upload File</TabsTrigger>
             </TabsList>
             <TabsContent value="paste" className="mt-4">
-              <div className="grid w-full gap-2">
+              <div className="grid w-full gap-2 relative">
                 <Label htmlFor="text-content">Your Text Content</Label>
                 <Textarea
                   id="text-content"
@@ -107,7 +141,16 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                   required
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
+                  disabled={isExtracting}
                 />
+                 {isExtracting && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-md">
+                    <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Extracting text from file...
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="upload" className="mt-4">
@@ -117,13 +160,13 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
               >
                 <FileUp className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-4 font-semibold text-primary">Click to upload a file</p>
-                <p className="text-sm text-muted-foreground">Only .txt files are supported for now.</p>
+                <p className="text-sm text-muted-foreground">.txt, .pdf, .doc, .docx are supported.</p>
                 <input
                   ref={fileInputRef}
                   id="file-upload"
                   type="file"
                   className="hidden"
-                  accept=".txt"
+                  accept=".txt,.pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={handleFileChange}
                 />
               </div>

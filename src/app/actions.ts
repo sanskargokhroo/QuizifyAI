@@ -2,6 +2,7 @@
 
 import { generateQuiz, type GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import { explainQuizSolution, type ExplainQuizSolutionInput, type ExplainQuizSolutionOutput } from '@/ai/flows/explain-solution';
+import { extractTextFromFile, type ExtractTextFromFileInput } from '@/ai/flows/extract-text-from-file';
 import { z } from 'zod';
 
 const generateQuizSchema = z.object({
@@ -47,5 +48,17 @@ export async function explainSolutionAction(
   } catch (e) {
     console.error(e);
     return { explanation: null, error: 'Failed to get explanation.' };
+  }
+}
+
+export async function extractTextFromFileAction(
+  input: ExtractTextFromFileInput
+): Promise<{ text: string | null; error: string | null }> {
+  try {
+    const result = await extractTextFromFile(input);
+    return { text: result.text, error: null };
+  } catch (e) {
+    console.error(e);
+    return { text: null, error: 'Failed to extract text from the file. The file might be corrupted, password-protected, or in an unsupported format.' };
   }
 }
