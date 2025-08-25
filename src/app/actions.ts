@@ -1,0 +1,51 @@
+'use server';
+
+import { generateQuiz, type GenerateQuizOutput } from '@/ai/flows/generate-quiz';
+import { explainQuizSolution, type ExplainQuizSolutionInput, type ExplainQuizSolutionOutput } from '@/ai/flows/explain-solution';
+import { z } from 'zod';
+
+const generateQuizSchema = z.object({
+  text: z.string().min(50, { message: 'Please provide at least 50 characters of text to generate a quiz.' }),
+  numQuestions: z.number().min(5).max(50),
+});
+
+export async function generateQuizAction(
+  prevState: any,
+  formData: FormData
+): Promise<{ quiz: GenerateQuizOutput['quiz'] | null; error: string | null; text: string | null }> {
+  const rawData = {
+    text: formData.get('text') as string,
+    numQuestions: Number(formData.get('numQuestions')),
+  };
+
+  const validatedFields = generateQuizSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+    return { quiz: null, error: validatedFields.error.errors.map((e) => e.message).join(', '), text: rawData.text };
+  }
+  
+  const { text, numQuestions } = validatedFields.data;
+
+  try {
+    const result = await generateQuiz({ text, numQuestions });
+    if (!result.quiz || result.quiz.length === 0) {
+      return { quiz: null, error: 'Could not generate a quiz from the provided text. Please try with a different text.', text };
+    }
+    return { quiz: result.quiz, error: null, text };
+  } catch (e) {
+    console.error(e);
+    return { quiz: null, error: 'An unexpected error occurred while generating the quiz. Please try again later.', text };
+  }
+}
+
+export async function explainSolutionAction(
+  input: ExplainQuizSolutionInput
+): Promise<{ explanation: string | null; error: string | null }> {
+  try {
+    const result = await explainQuizSolution(input);
+    return { explanation: result.explanation, error: null };
+  } catch (e) {
+    console.error(e);
+    return { explanation: null, error: 'Failed to get explanation.' };
+  }
+}
