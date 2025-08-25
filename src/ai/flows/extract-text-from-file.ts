@@ -34,11 +34,23 @@ const extractTextFromFileFlow = ai.defineFlow(
     inputSchema: ExtractTextFromFileInputSchema,
     outputSchema: ExtractTextFromFileOutputSchema,
   },
-  async input => {
+  async (input) => {
+    // Dynamically import file-type
+    const { fileTypeFromBuffer } = await (eval('import("file-type")') as Promise<typeof import('file-type')>);
+
+    const a = input.fileDataUri.split(',');
+    const b64 = a[1];
+    const buffer = Buffer.from(b64, 'base64');
+    const type = await fileTypeFromBuffer(buffer);
+
+    if (!type) {
+      throw new Error('Could not determine file type.');
+    }
+
     const {text} = await ai.generate({
       prompt: [
         {text: 'Extract all text content from the following document. If the document is a DOC/DOCX, it will be provided in a compatible format. For all file types, extract the raw text content accurately.'},
-        {media: {url: input.fileDataUri}},
+        {media: {url: input.fileDataUri, contentType: type.mime }},
       ],
     });
 
