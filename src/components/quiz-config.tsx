@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileUp, LoaderCircle, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
+import { Progress } from '@/components/ui/progress';
 
 type QuizConfigProps = {
   onQuizGenerated: (quiz: GenerateQuizOutput['quiz'], text: string) => void;
@@ -45,6 +46,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const [activeTab, setActiveTab] = useState('paste');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionProgress, setExtractionProgress] = useState(0);
 
   useEffect(() => {
     if (state.error) {
@@ -63,31 +65,48 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
     const file = event.target.files?.[0];
     if (file) {
       setIsExtracting(true);
+      setExtractionProgress(0);
       setActiveTab('paste'); // Switch to paste tab to show loader over textarea
+
+      // Simulate progress
+      const interval = setInterval(() => {
+        setExtractionProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(interval);
+            return prev;
+          }
+          return prev + 5;
+        });
+      }, 800);
 
       const reader = new FileReader();
       reader.onload = async (e) => {
         const fileDataUri = e.target?.result as string;
         const result = await extractTextFromFileAction({ fileDataUri });
         
-        setIsExtracting(false);
+        clearInterval(interval);
+        setExtractionProgress(100);
 
-        if (result.error) {
-          toast({
-            variant: 'destructive',
-            title: 'Extraction Error',
-            description: result.error,
-          });
-          setTextContent('');
-        } else if (result.text) {
-          setTextContent(result.text);
-          toast({
-            title: 'Success',
-            description: 'Text extracted successfully.',
-          });
-        }
+        setTimeout(() => {
+          setIsExtracting(false);
+          if (result.error) {
+            toast({
+              variant: 'destructive',
+              title: 'Extraction Error',
+              description: result.error,
+            });
+            setTextContent('');
+          } else if (result.text) {
+            setTextContent(result.text);
+            toast({
+              title: 'Success',
+              description: 'Text extracted successfully.',
+            });
+          }
+        }, 500);
       };
       reader.onerror = () => {
+        clearInterval(interval);
         setIsExtracting(false);
         toast({
           variant: 'destructive',
@@ -118,7 +137,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="paste">Paste Text</TabsTrigger>
-              <TabsTrigger value="upload">Upload File</TabsTrigger>
+              <TabsTrigger value="upload" disabled={isExtracting}>Upload File</TabsTrigger>
             </TabsList>
             <TabsContent value="paste" className="mt-4">
               <div className="grid w-full gap-2 relative">
@@ -134,9 +153,11 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                   disabled={isExtracting}
                 />
                  {isExtracting && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-md">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-md p-8">
                     <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-                    <p className="mt-2 text-sm text-muted-foreground">Extracting text from file...</p>
+                    <p className="mt-4 text-sm font-semibold text-muted-foreground">Extracting text from file...</p>
+                    <Progress value={extractionProgress} className="w-full mt-2" />
+                    <p className="text-xs text-muted-foreground mt-1">{extractionProgress}% Complete</p>
                   </div>
                 )}
               </div>
