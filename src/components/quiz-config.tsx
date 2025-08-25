@@ -62,52 +62,39 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type === 'text/plain') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const fileContent = e.target?.result as string;
-          setTextContent(fileContent);
-          setActiveTab('paste');
-        };
-        reader.onerror = () => {
-          toast({ variant: 'destructive', title: 'Error', description: 'Failed to read file.' });
-        };
-        reader.readAsText(file);
-      } else {
-        setIsExtracting(true);
-        setActiveTab('paste'); // Switch to paste tab to show progress/result
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const fileDataUri = e.target?.result as string;
-          const result = await extractTextFromFileAction({ fileDataUri });
-          setIsExtracting(false);
-          if (result.error) {
-            toast({
-              variant: 'destructive',
-              title: 'OCR Error',
-              description: result.error,
-            });
-            setTextContent('');
-          } else if (result.text) {
-            setTextContent(result.text);
-            toast({
-              title: 'Success',
-              description: 'Text extracted from the file.',
-            });
-          }
-        };
-        reader.onerror = () => {
-          setIsExtracting(false);
+      setIsExtracting(true);
+      setActiveTab('paste'); // Switch to paste tab to show progress/result
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const fileDataUri = e.target?.result as string;
+        const result = await extractTextFromFileAction({ fileDataUri });
+        setIsExtracting(false);
+        if (result.error) {
           toast({
             variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to read file for OCR.',
+            title: 'Extraction Error',
+            description: result.error,
           });
-        };
-        reader.readAsDataURL(file);
-      }
+          setTextContent('');
+        } else if (result.text) {
+          setTextContent(result.text);
+          toast({
+            title: 'Success',
+            description: 'Text extracted from the file.',
+          });
+        }
+      };
+      reader.onerror = () => {
+        setIsExtracting(false);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to read the file.',
+        });
+      };
+      reader.readAsDataURL(file);
     }
-    // Reset file input to allow uploading the same file again but only after processing is done
+    // Reset file input to allow uploading the same file again
     if(fileInputRef.current) {
         fileInputRef.current.value = '';
     }
