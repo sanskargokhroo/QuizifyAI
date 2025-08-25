@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview Extracts text from a given PDF file.
+ * @fileOverview Extracts text from a given file (PDF, DOC, DOCX, TXT).
  *
- * - extractTextFromFile - A function that extracts text from a PDF file.
+ * - extractTextFromFile - A function that extracts text from a file.
  * - ExtractTextFromFileInput - The input type for the extractTextFromFile function.
  * - ExtractTextFromFileOutput - The return type for the extractTextFromFile function.
  */
@@ -14,7 +14,7 @@ const ExtractTextFromFileInputSchema = z.object({
   fileDataUri: z
     .string()
     .describe(
-      "A PDF file as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:application/pdf;base64,<encoded_data>'."
+      "A file as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type ExtractTextFromFileInput = z.infer<typeof ExtractTextFromFileInputSchema>;
@@ -37,8 +37,8 @@ const extractTextFromFileFlow = ai.defineFlow(
   async (input) => {
     const {text} = await ai.generate({
       prompt: [
-        {text: 'Extract all text content from the following PDF document.'},
-        {media: {url: input.fileDataUri, contentType: 'application/pdf'}},
+        {text: 'Extract all text content from the following document. The document can be of type PDF, DOC, DOCX, or TXT.'},
+        {media: {url: input.fileDataUri}},
       ],
     });
 

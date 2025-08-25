@@ -63,7 +63,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
     const file = event.target.files?.[0];
     if (file) {
       setIsExtracting(true);
-      setActiveTab('paste');
+      setActiveTab('paste'); // Switch to paste tab to show loader over textarea
       const reader = new FileReader();
       reader.onload = async (e) => {
         const fileDataUri = e.target?.result as string;
@@ -146,14 +146,14 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                 onClick={triggerFileSelect}
               >
                 <FileUp className="mx-auto h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 font-semibold text-primary">Click to upload a PDF file</p>
-                <p className="text-sm text-muted-foreground">Only .pdf is supported.</p>
+                <p className="mt-4 font-semibold text-primary">Click to upload a file</p>
+                <p className="text-sm text-muted-foreground">Supported: .pdf, .doc, .docx, .txt</p>
                 <input
                   ref={fileInputRef}
                   id="file-upload"
                   type="file"
                   className="hidden"
-                  accept=".pdf"
+                  accept=".pdf,.doc,.docx,.txt"
                   onChange={handleFileChange}
                 />
               </div>
