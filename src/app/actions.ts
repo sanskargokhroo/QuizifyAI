@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { extractTextFromPdf } from '@/ai/flows/extract-text-from-pdf';
 
 const generateQuizSchema = z.object({
-  text: z.string().min(50, { message: 'Please provide at least 50 characters of text to generate a quiz.' }),
+  text: z.string().min(50, { message: 'Please provide at least 50 characters of content to generate a quiz.' }),
   numQuestions: z.number().min(5).max(50),
 });
 
@@ -31,7 +31,7 @@ export async function generateQuizAction(
   try {
     const result = await generateQuiz({ text, numQuestions });
     if (!result.quiz || result.quiz.length === 0) {
-      return { quiz: null, error: 'Could not generate a quiz from the provided text. Please try with a different text.', text };
+      return { quiz: null, error: 'Could not generate a quiz from the provided content. Please try with different content.', text };
     }
     return { quiz: result.quiz, error: null, text };
   } catch (e) {
@@ -39,6 +39,30 @@ export async function generateQuizAction(
     return { quiz: null, error: 'An unexpected error occurred while generating the quiz. Please try again later.', text };
   }
 }
+
+export async function generateMoreQuestionsAction(
+  input: { text: string; numQuestions: number }
+): Promise<{ quiz: GenerateQuizOutput['quiz'] | null; error: string | null; }> {
+  const validatedFields = generateQuizSchema.safeParse(input);
+
+  if (!validatedFields.success) {
+    return { quiz: null, error: validatedFields.error.errors.map((e) => e.message).join(', ') };
+  }
+  
+  const { text, numQuestions } = validatedFields.data;
+
+  try {
+    const result = await generateQuiz({ text, numQuestions });
+    if (!result.quiz || result.quiz.length === 0) {
+      return { quiz: null, error: 'Could not generate more questions from the provided content. Please try again.' };
+    }
+    return { quiz: result.quiz, error: null };
+  } catch (e) {
+    console.error(e);
+    return { quiz: null, error: 'An unexpected error occurred while generating more questions. Please try again later.' };
+  }
+}
+
 
 export async function explainSolutionAction(
   input: ExplainQuizSolutionInput

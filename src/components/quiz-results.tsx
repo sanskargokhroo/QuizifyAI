@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Lightbulb, RefreshCw, XCircle, CheckCircle, LoaderCircle } from 'lucide-react';
+import { Lightbulb, RefreshCw, XCircle, CheckCircle, LoaderCircle, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { explainSolutionAction } from '@/app/actions';
 import type { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
@@ -15,6 +15,8 @@ type QuizResultsProps = {
   userAnswers: string[];
   sourceText: string;
   onRestart: () => void;
+  onContinue: (text: string, numQuestions: number) => Promise<void>;
+  isContinuing: boolean;
 };
 
 type ExplanationState = {
@@ -25,7 +27,7 @@ type ExplanationState = {
   };
 };
 
-export default function QuizResults({ quiz, userAnswers, sourceText, onRestart }: QuizResultsProps) {
+export default function QuizResults({ quiz, userAnswers, sourceText, onRestart, onContinue, isContinuing }: QuizResultsProps) {
   const [explanations, setExplanations] = useState<ExplanationState>({});
 
   const score = useMemo(() => {
@@ -61,6 +63,10 @@ export default function QuizResults({ quiz, userAnswers, sourceText, onRestart }
     }));
   };
 
+  const handleContinueClick = () => {
+    onContinue(sourceText, quiz.length);
+  }
+
   return (
     <div className="w-full space-y-6">
       <Card className="shadow-lg text-center">
@@ -74,10 +80,25 @@ export default function QuizResults({ quiz, userAnswers, sourceText, onRestart }
             You answered <span className="font-semibold text-foreground">{score}</span> out of{' '}
             <span className="font-semibold text-foreground">{quiz.length}</span> questions correctly.
           </p>
-          <Button onClick={onRestart}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Take a New Quiz
-          </Button>
+          <div className="flex justify-center gap-4">
+            <Button onClick={onRestart} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Take a New Quiz
+            </Button>
+            <Button onClick={handleContinueClick} disabled={isContinuing}>
+              {isContinuing ? (
+                <>
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Continue with this content
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -6,6 +6,8 @@ import type { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import QuizConfig from '@/components/quiz-config';
 import QuizDisplay from '@/components/quiz-display';
 import QuizResults from '@/components/quiz-results';
+import { generateMoreQuestionsAction } from './actions';
+import { useToast } from '@/hooks/use-toast';
 
 type AppState = 'CONFIG' | 'QUIZ' | 'RESULTS';
 type Quiz = GenerateQuizOutput['quiz'];
@@ -15,10 +17,13 @@ export default function Home() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [userAnswers, setUserAnswers] = useState<string[]>([]);
   const [sourceText, setSourceText] = useState('');
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const { toast } = useToast();
 
   const handleQuizGenerated = (generatedQuiz: Quiz, text: string) => {
     setQuiz(generatedQuiz);
     setSourceText(text);
+    setUserAnswers([]);
     setAppState('QUIZ');
   };
 
@@ -34,12 +39,29 @@ export default function Home() {
     setAppState('CONFIG');
   };
 
+  const handleContinue = async (text: string, numQuestions: number) => {
+    setIsGeneratingMore(true);
+    const result = await generateMoreQuestionsAction({ text, numQuestions });
+    setIsGeneratingMore(false);
+
+    if (result.error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error,
+      });
+    } else if (result.quiz) {
+      handleQuizGenerated(result.quiz, text);
+    }
+  };
+
+
   const renderContent = () => {
     switch (appState) {
       case 'QUIZ':
         return quiz && <QuizDisplay quiz={quiz} onQuizFinish={handleQuizFinished} />;
       case 'RESULTS':
-        return quiz && <QuizResults quiz={quiz} userAnswers={userAnswers} sourceText={sourceText} onRestart={handleRestart} />;
+        return quiz && <QuizResults quiz={quiz} userAnswers={userAnswers} sourceText={sourceText} onRestart={handleRestart} onContinue={handleContinue} isContinuing={isGeneratingMore} />;
       case 'CONFIG':
       default:
         return <QuizConfig onQuizGenerated={handleQuizGenerated} />;

@@ -152,7 +152,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                 <Textarea
                   id="text-content"
                   name="text"
-                  placeholder="Paste your notes, article, or any text here... (min. 50 characters)"
+                  placeholder="Paste your notes, article, or any content here... (min. 50 characters)"
                   className="min-h-[200px] text-base"
                   required
                   value={textContent}
