@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useState, useRef, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { generateQuizAction, extractTextFromFileAction } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +38,7 @@ function SubmitButton() {
 
 export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const initialState = { quiz: null, error: null, text: null };
-  const [state, formAction] = useFormState(generateQuizAction, initialState);
+  const [state, formAction] = useActionState(generateQuizAction, initialState);
   const { toast } = useToast();
   const [numQuestions, setNumQuestions] = useState(10);
   const [textContent, setTextContent] = useState('');
