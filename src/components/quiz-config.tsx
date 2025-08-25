@@ -107,7 +107,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
         reader.readAsDataURL(file);
       }
     }
-    // Reset file input to allow uploading the same file again
+    // Reset file input to allow uploading the same file again but only after processing is done
     if(fileInputRef.current) {
         fileInputRef.current.value = '';
     }
