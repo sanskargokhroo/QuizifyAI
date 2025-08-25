@@ -37,7 +37,7 @@ const extractTextFromFileFlow = ai.defineFlow(
   async (input) => {
     const {text} = await ai.generate({
       prompt: [
-        {text: 'Extract all text content from the following document. The document can be of type PDF, DOC, DOCX, or TXT.'},
+        {text: 'Extract text from the following document.'},
         {media: {url: input.fileDataUri}},
       ],
     });
