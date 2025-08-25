@@ -77,7 +77,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
           }
           return prev + 5;
         });
-      }, 1500); // Slow down the interval to 1.5 seconds
+      }, 2500); // Slow down the interval to 2.5 seconds
 
       const reader = new FileReader();
       reader.onload = async (e) => {
