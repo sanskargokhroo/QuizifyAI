@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, XCircle, CheckCircle } from 'lucide-react';
 import type { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
+import { cn } from '@/lib/utils';
 
 type QuizDisplayProps = {
   quiz: GenerateQuizOutput['quiz'];
@@ -20,6 +21,8 @@ export default function QuizDisplay({ quiz, onQuizFinish }: QuizDisplayProps) {
   
   const currentQuestion = quiz[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quiz.length) * 100;
+  const selectedAnswerForCurrentQuestion = selectedAnswers[currentQuestionIndex];
+  const correctAnswer = currentQuestion.answers[currentQuestion.correctAnswerIndex];
 
   const handleAnswerChange = (value: string) => {
     const newAnswers = [...selectedAnswers];
@@ -43,6 +46,17 @@ export default function QuizDisplay({ quiz, onQuizFinish }: QuizDisplayProps) {
     onQuizFinish(selectedAnswers);
   };
 
+  const getAnswerClass = (answer: string) => {
+    if (!selectedAnswerForCurrentQuestion) return '';
+    if (answer === selectedAnswerForCurrentQuestion) {
+      return answer === correctAnswer ? 'border-green-500 bg-green-100/50' : 'border-destructive bg-destructive/10';
+    }
+    if (answer === correctAnswer) {
+      return 'border-green-500 bg-green-100/50';
+    }
+    return '';
+  }
+
   return (
     <Card className="w-full shadow-lg">
       <CardHeader>
@@ -57,15 +71,33 @@ export default function QuizDisplay({ quiz, onQuizFinish }: QuizDisplayProps) {
           value={selectedAnswers[currentQuestionIndex]}
           onValueChange={handleAnswerChange}
           className="space-y-3"
+          disabled={!!selectedAnswerForCurrentQuestion}
         >
-          {currentQuestion.answers.map((answer, index) => (
-            <div key={index} className="flex items-center space-x-3 rounded-md border p-4 hover:bg-accent/50 transition-colors">
-              <RadioGroupItem value={answer} id={`q${currentQuestionIndex}-a${index}`} />
-              <Label htmlFor={`q${currentQuestionIndex}-a${index}`} className="text-base cursor-pointer flex-1">
-                {answer}
-              </Label>
-            </div>
-          ))}
+          {currentQuestion.answers.map((answer, index) => {
+            const isSelected = selectedAnswerForCurrentQuestion === answer;
+            const isCorrect = answer === correctAnswer;
+            return (
+              <div 
+                key={index} 
+                className={cn(
+                  "flex items-center space-x-3 rounded-md border p-4 transition-colors",
+                   selectedAnswerForCurrentQuestion ? 'cursor-not-allowed' : 'hover:bg-accent/50 cursor-pointer',
+                   getAnswerClass(answer)
+                )}
+                onClick={() => !selectedAnswerForCurrentQuestion && handleAnswerChange(answer)}
+              >
+                <RadioGroupItem value={answer} id={`q${currentQuestionIndex}-a${index}`} />
+                <Label htmlFor={`q${currentQuestionIndex}-a${index}`} className={cn("text-base flex-1", selectedAnswerForCurrentQuestion ? 'cursor-not-allowed' : 'cursor-pointer')}>
+                  {answer}
+                </Label>
+                {selectedAnswerForCurrentQuestion && (
+                  isCorrect ? 
+                  <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                  (isSelected && <XCircle className="h-5 w-5 text-destructive" />)
+                )}
+              </div>
+            )}
+          )}
         </RadioGroup>
       </CardContent>
       <CardFooter className="flex justify-between">
