@@ -66,7 +66,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
           <Tabs defaultValue="paste">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="paste">Paste Text</TabsTrigger>
-              <TabsTrigger value="upload" disabled>Upload File</TabsTrigger>
+              <TabsTrigger value="upload">Upload File</TabsTrigger>
             </TabsList>
             <TabsContent value="paste" className="mt-4">
               <div className="grid w-full gap-2">
