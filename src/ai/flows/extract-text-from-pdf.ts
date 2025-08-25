@@ -44,12 +44,7 @@ const fastExtractionTool = ai.defineTool(
 export async function extractTextFromPdf(input: ExtractTextFromPdfInput): Promise<ExtractTextFromPdfOutput> {
   const { text } = await ai.generate({
     model: 'googleai/gemini-2.0-flash',
-    prompt: `You have two ways to extract text from this PDF.
-    1.  A fast method that reads the text layer directly.
-    2.  A slower OCR method that reads the document page by page.
-
-    First, try to use the fast method. If and only if the fast method returns empty or garbled text, then use the slower OCR method.
-
+    prompt: `Extract the text from the following document. First, try to use the fast method. If and only if the fast method returns empty or garbled text, then use the slower OCR method.
     Document:
     {{media url=fileDataUri}}
     `,
