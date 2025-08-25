@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { generateQuizAction } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,9 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const [state, formAction] = useFormState(generateQuizAction, initialState);
   const { toast } = useToast();
   const [numQuestions, setNumQuestions] = useState(10);
+  const [textContent, setTextContent] = useState('');
+  const [activeTab, setActiveTab] = useState('paste');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state.error) {
@@ -54,6 +57,31 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
       onQuizGenerated(state.quiz, state.text);
     }
   }, [state, onQuizGenerated, toast]);
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fileContent = e.target?.result as string;
+        setTextContent(fileContent);
+        // Switch to paste tab to show content
+        setActiveTab('paste');
+      };
+      reader.onerror = () => {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to read file.',
+        });
+      };
+      reader.readAsText(file);
+    }
+  };
+  
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click();
+  }
 
   return (
     <Card className="w-full shadow-lg">
@@ -63,7 +91,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
       </CardHeader>
       <form action={formAction}>
         <CardContent>
-          <Tabs defaultValue="paste">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="paste">Paste Text</TabsTrigger>
               <TabsTrigger value="upload">Upload File</TabsTrigger>
@@ -77,14 +105,27 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                   placeholder="Paste your notes, article, or any text here... (min. 50 characters)"
                   className="min-h-[200px] text-base"
                   required
+                  value={textContent}
+                  onChange={(e) => setTextContent(e.target.value)}
                 />
               </div>
             </TabsContent>
             <TabsContent value="upload" className="mt-4">
-              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-12 text-center">
+              <div 
+                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-12 text-center cursor-pointer hover:border-primary transition-colors"
+                onClick={triggerFileSelect}
+              >
                 <FileUp className="mx-auto h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 font-semibold text-muted-foreground">OCR for documents coming soon!</p>
-                <p className="text-sm text-muted-foreground">For now, please use the paste text option.</p>
+                <p className="mt-4 font-semibold text-primary">Click to upload a file</p>
+                <p className="text-sm text-muted-foreground">Only .txt files are supported for now.</p>
+                <input
+                  ref={fileInputRef}
+                  id="file-upload"
+                  type="file"
+                  className="hidden"
+                  accept=".txt"
+                  onChange={handleFileChange}
+                />
               </div>
             </TabsContent>
           </Tabs>
