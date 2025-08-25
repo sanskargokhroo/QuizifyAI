@@ -9,10 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileUp, LoaderCircle, Sparkles } from 'lucide-react';
+import { FileUp, LoaderCircle, Sparkles, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
-import { Progress } from '@/components/ui/progress';
 
 type QuizConfigProps = {
   onQuizGenerated: (quiz: GenerateQuizOutput['quiz'], text: string) => void;
@@ -46,7 +45,7 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   const [activeTab, setActiveTab] = useState('paste');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionProgress, setExtractionProgress] = useState(0);
+  const [extractionSuccess, setExtractionSuccess] = useState(false);
 
   useEffect(() => {
     if (state.error) {
@@ -65,48 +64,30 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
     const file = event.target.files?.[0];
     if (file) {
       setIsExtracting(true);
-      setExtractionProgress(0);
       setActiveTab('paste'); // Switch to paste tab to show loader over textarea
-
-      // Simulate progress
-      const interval = setInterval(() => {
-        setExtractionProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(interval);
-            return prev;
-          }
-          return prev + 5;
-        });
-      }, 2500); // Slow down the interval to 2.5 seconds
 
       const reader = new FileReader();
       reader.onload = async (e) => {
         const fileDataUri = e.target?.result as string;
         const result = await extractTextFromFileAction({ fileDataUri });
         
-        clearInterval(interval);
-        setExtractionProgress(100);
-
-        setTimeout(() => {
-          setIsExtracting(false);
-          if (result.error) {
-            toast({
-              variant: 'destructive',
-              title: 'Extraction Error',
-              description: result.error,
-            });
-            setTextContent('');
-          } else if (result.text) {
-            setTextContent(result.text);
-            toast({
-              title: 'Success',
-              description: 'Text extracted successfully.',
-            });
-          }
-        }, 500);
+        setIsExtracting(false);
+        if (result.error) {
+          toast({
+            variant: 'destructive',
+            title: 'Extraction Error',
+            description: result.error,
+          });
+          setTextContent('');
+        } else if (result.text) {
+          setTextContent(result.text);
+          setExtractionSuccess(true);
+          setTimeout(() => {
+            setExtractionSuccess(false);
+          }, 3000);
+        }
       };
       reader.onerror = () => {
-        clearInterval(interval);
         setIsExtracting(false);
         toast({
           variant: 'destructive',
@@ -127,7 +108,15 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
   }
 
   return (
-    <Card className="w-full shadow-lg">
+    <Card className="w-full shadow-lg relative">
+      {extractionSuccess && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-md z-10">
+          <div className="flex flex-col items-center gap-2 bg-secondary p-6 rounded-lg shadow-xl">
+            <CheckCircle className="h-10 w-10 text-green-500" />
+            <p className="text-lg font-semibold text-foreground">Text extracted successfully!</p>
+          </div>
+        </div>
+      )}
       <CardHeader>
         <CardTitle className="text-2xl">Create Your Quiz</CardTitle>
         <CardDescription>Start by providing some text content. We'll use AI to generate a quiz from it.</CardDescription>
@@ -156,8 +145,6 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-md p-8">
                     <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
                     <p className="mt-4 text-sm font-semibold text-muted-foreground">Extracting text from file...</p>
-                    <Progress value={extractionProgress} className="w-full mt-2" />
-                    <p className="text-xs text-muted-foreground mt-1">{extractionProgress}% Complete</p>
                   </div>
                 )}
               </div>
