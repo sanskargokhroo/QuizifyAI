@@ -10,6 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 // import pdfParse from 'pdf-parse'; // Commenting out direct import
+import pdfParse from 'pdf-parse-debugging-disabled'; // Use the patched version
 
 const ExtractTextFromPdfInputSchema = z.object({
   fileDataUri: z
@@ -44,13 +45,21 @@ const extractTextFromPdfFlow = ai.defineFlow(
         const pdfBuffer = Buffer.from(base64, 'base64');
 
         // Dynamically import pdf-parse
-        const pdfParse = (await import('pdf-parse')).default;
+        const pdfParse = (await import('pdf-parse-debugging-disabled')).default;
         // Use pdf-parse to extract text
-        const data = await pdfParse(pdfBuffer);
+        const data = await pdfParse(pdfBuffer, { 
+          pagerender: (pageData: any) => pageData.getTextContent().then((textContent: any) => textContent.items.map((item: any) => item.str).join('')),
+          max: undefined, // Removed max:1 for all pages
+          // Disable worker to prevent file system access errors in server environment
+          // pdfjs: { 
+          //   workerSrc: '' 
+          // }
+        });
 
         return {text: data.text};
       } catch (e) {
         console.error("Error during PDF text extraction:", e);
+        console.error("PDF extraction error details:", e); // Add detailed logging
         throw e;
       }
     }
