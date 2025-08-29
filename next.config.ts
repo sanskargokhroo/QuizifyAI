@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
   serverRuntimeConfig: {
     api: {
       bodyParser: {
-        sizeLimit: '10mb', // Adjust this value as needed, e.g., '8mb', '16mb'
+        sizeLimit: '50mb', // Adjust this value as needed, e.g., '8mb', '16mb'
       },
     },
   },
