@@ -69,7 +69,6 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
       setProgress(0);
       setActiveTab('paste'); // Switch to paste tab to show loader over textarea
 
-      // Simulate progress
       const interval = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 95) {
@@ -78,12 +77,41 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
           }
           return prev + 5;
         });
-      }, 2500); // Slower progress
+      }, 2500);
 
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const fileDataUri = e.target?.result as string;
-        const result = await extractTextFromFileAction({ fileDataUri });
+      try {
+        // 1. Get a pre-signed URL from our API route
+        const getSignedUrlRes = await fetch('/api/gcs-upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        });
+        const { url: signedUrl, filename: gcsFileName } = await getSignedUrlRes.json();
+
+        if (!getSignedUrlRes.ok) {
+          throw new Error('Failed to get signed URL for GCS upload.');
+        }
+
+        // 2. Directly upload the file to GCS using the pre-signed URL
+        const uploadRes = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type,
+          },
+          body: file,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload file directly to GCS.');
+        }
+
+        // Construct the public URL for the uploaded file (adjust if bucket is not public)
+        const gcsFileUrl = `https://storage.googleapis.com/${process.env.NEXT_PUBLIC_GCS_BUCKET_NAME}/${gcsFileName}`;
+
+        // 3. Call the server action with the GCS file URL
+        const result = await extractTextFromFileAction({ fileUrl: gcsFileUrl, contentType: file.type });
         
         clearInterval(interval);
         setProgress(100);
@@ -103,17 +131,17 @@ export default function QuizConfig({ onQuizGenerated }: QuizConfigProps) {
             setExtractionSuccess(false);
           }, 3000);
         }
-      };
-      reader.onerror = () => {
+      } catch (error: any) {
         clearInterval(interval);
         setIsExtracting(false);
+        console.error("File upload or extraction error:", error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to read the file.',
+          title: 'Upload/Extraction Error',
+          description: error.message || 'Failed to process file. Please try again.',
         });
-      };
-      reader.readAsDataURL(file);
+        setTextContent('');
+      }
     }
     // Reset file input to allow uploading the same file again
     if(fileInputRef.current) {
