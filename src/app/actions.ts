@@ -94,7 +94,7 @@ export async function extractTextFromFileAction(
     
     return { text: result.text, error: null };
   } catch (e) {
-    console.error(e);
+    console.error("Error in extractTextFromFileAction:", e);
     return { text: null, error: 'Failed to extract text from the file. The file might be corrupted, password-protected, or in an unsupported format.' };
   }
 }

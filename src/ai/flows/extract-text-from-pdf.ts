@@ -37,14 +37,19 @@ const extractTextFromPdfFlow = ai.defineFlow(
       outputSchema: ExtractTextFromPdfOutputSchema,
     },
     async (input) => {
-      const {text} = await ai.generate({
-        prompt: [
-            {text: "Extract all text from the following document provided as a data URI."},
-            {media: {url: input.fileDataUri}}
-        ]
-      });
-  
-      return {text};
+      try {
+        const {text} = await ai.generate({
+          prompt: [
+              {text: "Extract all text from the following document provided as a data URI."},
+              {media: {url: input.fileDataUri}}
+          ]
+        });
+    
+        return {text};
+      } catch (e) {
+        console.error("Error during PDF text extraction:", e);
+        throw e;
+      }
     }
   );
   
