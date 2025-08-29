@@ -9,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import pdfParse from 'pdf-parse';
 
 const ExtractTextFromPdfInputSchema = z.object({
   fileDataUri: z
@@ -38,14 +39,14 @@ const extractTextFromPdfFlow = ai.defineFlow(
     },
     async (input) => {
       try {
-        const {text} = await ai.generate({
-          prompt: [
-              {text: "Extract all text from the following document provided as a data URI."},
-              {media: {url: input.fileDataUri}}
-          ]
-        });
-    
-        return {text};
+        // Extract base64 data from the data URI
+        const base64 = input.fileDataUri.split(',')[1];
+        const pdfBuffer = Buffer.from(base64, 'base64');
+
+        // Use pdf-parse to extract text
+        const data = await pdfParse(pdfBuffer);
+
+        return {text: data.text};
       } catch (e) {
         console.error("Error during PDF text extraction:", e);
         throw e;
