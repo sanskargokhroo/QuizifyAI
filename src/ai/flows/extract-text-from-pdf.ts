@@ -9,7 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import pdfParse from 'pdf-parse';
+// import pdfParse from 'pdf-parse'; // Commenting out direct import
 
 const ExtractTextFromPdfInputSchema = z.object({
   fileDataUri: z
@@ -43,6 +43,8 @@ const extractTextFromPdfFlow = ai.defineFlow(
         const base64 = input.fileDataUri.split(',')[1];
         const pdfBuffer = Buffer.from(base64, 'base64');
 
+        // Dynamically import pdf-parse
+        const pdfParse = (await import('pdf-parse')).default;
         // Use pdf-parse to extract text
         const data = await pdfParse(pdfBuffer);
 
