@@ -23,6 +23,13 @@ const nextConfig: NextConfig = {
       '*.cloudworkstations.dev',
     ],
   },
+  serverRuntimeConfig: {
+    api: {
+      bodyParser: {
+        sizeLimit: '10mb', // Adjust this value as needed, e.g., '8mb', '16mb'
+      },
+    },
+  },
 };
 
 export default nextConfig;
